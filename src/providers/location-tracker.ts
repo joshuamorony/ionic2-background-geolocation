@@ -1,5 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
-import { Geolocation, Geoposition, BackgroundGeolocation } from 'ionic-native';
+import { BackgroundGeolocation } from '@ionic-native/background-geolocation';
+import { Geolocation, Geoposition } from '@ionic-native/geolocation';
 import 'rxjs/add/operator/filter';
 
 @Injectable()
@@ -9,7 +10,7 @@ export class LocationTracker {
   public lat: number = 0;
   public lng: number = 0;
 
-  constructor(public zone: NgZone) {
+  constructor(public zone: NgZone, public backgroundGeolocation: BackgroundGeolocation, public geolocation: Geolocation) {
 
   }
 
@@ -25,24 +26,24 @@ export class LocationTracker {
       interval: 2000 
     };
 
-    BackgroundGeolocation.configure((location) => {
+    this.backgroundGeolocation.configure(config).subscribe((location) => {
 
-		console.log('BackgroundGeolocation:  ' + location.latitude + ',' + location.longitude);
+      console.log('BackgroundGeolocation:  ' + location.latitude + ',' + location.longitude);
 
-		// Run update inside of Angular's zone
-		this.zone.run(() => {
-			this.lat = location.latitude;
-			this.lng = location.longitude;
-		});
+      // Run update inside of Angular's zone
+      this.zone.run(() => {
+        this.lat = location.latitude;
+        this.lng = location.longitude;
+      });
 
-     }, (err) => {
+    }, (err) => {
 
-		console.log(err);
+      console.log(err);
 
-     }, config);
+    });
 
     // Turn ON the background-geolocation system.
-    BackgroundGeolocation.start();
+    this.backgroundGeolocation.start();
 
 
     // Foreground Tracking
@@ -52,7 +53,7 @@ export class LocationTracker {
 		enableHighAccuracy: true
 	};
 
-	this.watch = Geolocation.watchPosition(options).filter((p: any) => p.code === undefined).subscribe((position: Geoposition) => {
+	this.watch = this.geolocation.watchPosition(options).filter((p: any) => p.code === undefined).subscribe((position: Geoposition) => {
 
 		console.log(position);
 
@@ -70,7 +71,7 @@ export class LocationTracker {
 
     console.log('stopTracking');
 
-    BackgroundGeolocation.finish();
+    this.backgroundGeolocation.finish();
     this.watch.unsubscribe();
 
   }
